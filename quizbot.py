@@ -15,22 +15,6 @@ quizbot_rtm = RTMClient(token=os.environ.get("SLACK_BOT_TOKEN"))
 quizbot_web = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
 quizbot_id = None
 
-### basic question file structure
-{
-    'questions': [
-        {
-            'question_text': '',
-            'answer': '',  # or a list
-            'check_function': '',
-            'hints': [],
-            'score': 1,
-            'time_hint': 60,
-            'time_limit': 180
-        }
-    ],
-    'intro_text': ''
-}
-
 CHECK_FUNCTIONS = {
     '=': lambda x, y: operator.eq(x.lower(), y.lower())
 }
