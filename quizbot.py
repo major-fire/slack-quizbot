@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os 
 import re
@@ -19,7 +19,7 @@ CHECK_FUNCTIONS = {
     '=': lambda x, y: operator.eq(x.lower(), y.lower())
 }
 
-COMMON_INTRO_TEXT = "Hi there, this is simon's testing bot"
+COMMON_INTRO_TEXT = "Hi there, this is simon's testing quiz bot"
 READY_SET_GO = "Ready? Let's go!"
 DEFAULT_HINT_TEXT = "Do you really need a hint??? Keep guessing :)"
 
@@ -47,7 +47,7 @@ class Quiz(object):
         check_function = None
         score = 1
         def __init__(
-            self, question_text, answer, check_function='', 
+            self, question_text, answer, check_function='=', 
             hints=[], score=1, time_hint=60, time_limit=180):
             self.text = question_text
             self.answer = answer
@@ -158,7 +158,9 @@ class Quiz(object):
 
     def sendIntro(self):
         self.sendString(COMMON_INTRO_TEXT)
+        time.sleep(3)
         self.sendString(self.intro)
+        time.sleep(3)
         self.sendString(READY_SET_GO)
 
     def sendCorrectMessage(self, user):
@@ -169,6 +171,11 @@ class Quiz(object):
         elif isinstance(answer, str):
             answerstr = f"{answer}"
         message = f"CORRECT! <@{user}> got the right answer ({answerstr})"
+        self.sendString(message)
+
+    def sendIncorrectMessage(self, user):
+        question = self.current_question
+        message = f"'fraid not, <@{user}>!"
         self.sendString(message)
 
     def sendScores(self):
@@ -234,8 +241,7 @@ class Quiz(object):
                 self.endQuestion()
                 self.web = old_web
             else:
-                pass
-                # self.sendIncorrectMessage(user, question)
+                self.sendIncorrectMessage(user)
 
 
 def parseCLArgs():
@@ -270,6 +276,7 @@ def main():
     )
 
     quiz.sendIntro()
+    time.sleep(3)
     quiz.start()
 
     @RTMClient.run_on(event='message')
