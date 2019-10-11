@@ -221,6 +221,7 @@ class Quiz(object):
             user = data['username']
         else:
             return
+        ## TODO ignore own messages
         # parse message
         question = self.current_question
         if data['channel'] != self.channel:
@@ -241,7 +242,8 @@ class Quiz(object):
                 self.endQuestion()
                 self.web = old_web
             else:
-                self.sendIncorrectMessage(user)
+                pass 
+                # self.sendIncorrectMessage(user)
 
 
 def parseCLArgs():
