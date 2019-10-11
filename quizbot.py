@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-​
+
 import os 
 import re
 import sys
@@ -10,11 +10,11 @@ import operator
 import threading
 from slack import RTMClient, WebClient
 from datetime import datetime, timedelta
-​
+
 quizbot_rtm = RTMClient(token=os.environ.get("SLACK_BOT_TOKEN"))
 quizbot_web = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
 quizbot_id = None
-​
+
 ### basic question file structure
 {
     'questions': [
@@ -30,15 +30,15 @@ quizbot_id = None
     ],
     'intro_text': ''
 }
-​
+
 CHECK_FUNCTIONS = {
     '=': lambda x, y: operator.eq(x.lower(), y.lower())
 }
-​
+
 COMMON_INTRO_TEXT = "Hi there, this is simon's testing bot"
 READY_SET_GO = "Ready? Let's go!"
 DEFAULT_HINT_TEXT = "Do you really need a hint??? Keep guessing :)"
-​
+
 class Quiz(object):
     web = None
     rtm = None
@@ -53,7 +53,7 @@ class Quiz(object):
         self.rtm = rtm
         self.channel = self.getChannelID(channel)
         self.intro, self.questions = self.loadQuestions(quiz_file)
-​
+
     class Question(object):
         text = ''
         answer = ''  # or a list
@@ -76,7 +76,7 @@ class Quiz(object):
             
         def getCheckFunction(self, check_function):
             return CHECK_FUNCTIONS.get(check_function, operator.eq)
-​
+
         def checkAnswer(self, answer):
             if isinstance(self.answer, str):
                 return self.check_function(self.answer, answer)
@@ -84,14 +84,14 @@ class Quiz(object):
                 return any([
                     self.check_function(x, answer) for x in self.answer
                 ])
-​
+
     def sendQuestion(self, text, hint=False):
         if hint is not True:
             text = self.current_question.text
-​
+
         message = f"{'Hint' if hint else 'Question'}: {text}"
         self.sendString(message)
-​
+
         if hint is not True:
             self.current_question_start = datetime.now()        
         
@@ -100,7 +100,7 @@ class Quiz(object):
             float(wait_time), self.hintOrPass
         )
         self.timer.start()
-​
+
     def getWaitTime(self):
         time_hint = timedelta(seconds=self.current_question.time_hint)
         time_total = timedelta(seconds=self.current_question.time_limit)
@@ -109,7 +109,7 @@ class Quiz(object):
         # add a few seconds to allow some wiggle room
         time_end = time_start + time_total + time_wiggle
         time_now = datetime.now()
-​
+
         # are we past our finish time
         # we shouldn't get here???
         if time_now > time_end:
@@ -121,7 +121,7 @@ class Quiz(object):
                 # remove wiggle time so we hopeully end at correct time
                 (time_end - time_now).seconds
             )
-​
+
             return wait_time
         
     def hintOrPass(self):
@@ -132,13 +132,13 @@ class Quiz(object):
         time_start = self.current_question_start
         time_end = time_start + time_total
         time_now = datetime.now()
-​
+
         # are we past our finish time
         if time_now > time_end:
             self.endQuestion(fail=True)
         else:
             self.sendQuestion(self.getHintText(), hint=True)
-​
+
     def getHintText(self):
         hints = self.current_question.hints
         if len(hints) > 0:
@@ -146,7 +146,7 @@ class Quiz(object):
         else:
             text = DEFAULT_HINT_TEXT
         return text
-​
+
     def endQuestion(self, fail=False):
         question = self.current_question
         self.timer.cancel()
@@ -165,18 +165,18 @@ class Quiz(object):
             js = json.load(f)
         questions = [self.Question(**x) for x in js['questions']]
         return js['intro_text'], questions
-​
+
     def getChannelID(self, name):
         channels = self.web.channels_list().data['channels']
         for channel in channels:
             if channel['name'] == name:
                 return channel['id']
-​
+
     def sendIntro(self):
         self.sendString(COMMON_INTRO_TEXT)
         self.sendString(self.intro)
         self.sendString(READY_SET_GO)
-​
+
     def sendCorrectMessage(self, user):
         question = self.current_question
         answer = question.answer
@@ -186,7 +186,7 @@ class Quiz(object):
             answerstr = f"{answer}"
         message = f"CORRECT! <@{user}> got the right answer ({answerstr})"
         self.sendString(message)
-​
+
     def sendScores(self):
         # returns list of tuples ('username', score)
         results = sorted(
@@ -197,13 +197,13 @@ class Quiz(object):
         message += "The results are as follows: \n"
         for i, result in enumerate(results):
             message += f"{i+1}) <@{result[0]}> - score {result[1]}\n"
-​
+
         self.sendString(message)
-​
+
     def sayThanks(self):
         message = "Thanks for playing everyone! See you all next week :)"
         self.sendString(message)
-​
+
     def sendString(self, message):
         time.sleep(0.1)
         self.web.chat_postMessage(
@@ -211,17 +211,17 @@ class Quiz(object):
             text=message,
             run_async=True
         )
-​
+
     def start(self):
         self.current_question = self.questions.pop(0)
         self.sendQuestion(self.current_question.text)
-​
+
     def end(self):
         self.current_question = None
         self.sendScores()
         self.sayThanks()
         self.rtm.stop()
-​
+
     def handleResponse(self, **payload):
         data = payload['data']
         if 'user' in data.keys():
@@ -274,8 +274,8 @@ def parseCLArgs():
     )
     args = parser.parse_args()
     return args
-​
-​
+
+
 def main():
     args = parseCLArgs()
     quiz = Quiz(
@@ -284,16 +284,16 @@ def main():
         quiz_file=args.file, 
         channel=args.channel
     )
-​
+
     quiz.sendIntro()
     quiz.start()
-​
+
     @RTMClient.run_on(event='message')
     def handle(**payload):
         quiz.handleResponse(**payload)
-​
+
     quizbot_rtm.start()
-​
-​
+
+
 if __name__ == "__main__":
     main()
