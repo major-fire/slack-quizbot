@@ -278,7 +278,6 @@ def main():
     )
 
     quiz.sendIntro()
-    time.sleep(3)
     quiz.start()
 
     @RTMClient.run_on(event='message')
