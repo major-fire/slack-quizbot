@@ -32,11 +32,13 @@ class Quiz(object):
     intro = ''
     questions = []
     userScores = {}
+    botUsers = [] 
     def __init__(self, web, rtm, quiz_file, channel):
         self.web = web
         self.rtm = rtm
         self.channel = self.getChannelID(channel)
         self.intro, self.questions = self.loadQuestions(quiz_file)
+        self.botUsers = self.getBots()
 
     class Question(object):
         text = ''
@@ -107,7 +109,7 @@ class Quiz(object):
             )
 
             return wait_time
-        
+
     def hintOrPass(self):
         self.timer.cancel()
         
@@ -155,6 +157,10 @@ class Quiz(object):
         for channel in channels:
             if channel['name'] == name:
                 return channel['id']
+
+    def getBots(self):
+        users = self.web.users_list()
+        return [user['id'] for user in users if user['is_bot']]
 
     def sendIntro(self):
         self.sendString(COMMON_INTRO_TEXT)
@@ -221,7 +227,10 @@ class Quiz(object):
             user = data['username']
         else:
             return
-        ## TODO ignore own messages
+        # ignore all bots, they're cheaters (or me)
+        # turns out bot users have a different data struct to other users - cool
+        if user in self.botUsers or 'bot_profile' in data.keys():
+            return
         # parse message
         question = self.current_question
         if data['channel'] != self.channel:
@@ -243,7 +252,7 @@ class Quiz(object):
                 self.web = old_web
             else:
                 pass 
-                # self.sendIncorrectMessage(user)
+                self.sendIncorrectMessage(user)
 
 
 def parseCLArgs():
