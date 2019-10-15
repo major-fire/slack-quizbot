@@ -221,22 +221,30 @@ class Quiz(object):
 
     def handleResponse(self, **payload):
         data = payload['data']
+        
+        # get username
         if 'user' in data.keys():
             user = data['user'] 
         elif 'username' in data.keys():
             user = data['username']
         else:
             return
+        
         # ignore all bots, they're cheaters (or me)
         # turns out bot users have a different data struct to other users - cool
         if user in self.botUsers or 'bot_profile' in data.keys():
             return
-        # parse message
-        question = self.current_question
+        
+        # make sure it's the right channel
         if data['channel'] != self.channel:
             return
+        
+        # make sure i'm actually asking a question
+        question = self.current_question
         if question is None: 
             return
+        
+        # parse message
         else:
             old_web = self.web
             self.web = payload['web_client']
