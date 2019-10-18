@@ -19,7 +19,7 @@ CHECK_FUNCTIONS = {
     '=': lambda x, y: operator.eq(x.lower(), y.lower())
 }
 
-COMMON_INTRO_TEXT = "Hi there, this is simon's testing quiz bot"
+COMMON_INTRO_TEXT = "Hi there, this is Simon's little baby quizbot"
 READY_SET_GO = "Ready? Let's go!"
 DEFAULT_HINT_TEXT = "Do you really need a hint??? Keep guessing :)"
 
