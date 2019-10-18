@@ -153,7 +153,10 @@ class Quiz(object):
         return js['intro_text'], questions
 
     def getChannelID(self, name):
-        channels = self.web.channels_list().data['channels']
+        public_channels = self.web.channels_list().data['channels']
+        private_channels = self.web.groups_list().data['groups']
+
+        channels = public_channels + private_channels
         for channel in channels:
             if channel['name'] == name:
                 return channel['id']
