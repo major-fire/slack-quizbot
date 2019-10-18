@@ -137,7 +137,7 @@ class Quiz(object):
         question = self.current_question
         self.timer.cancel()
         if fail is True:
-            message = f"No one got it? :(\nThe answer was {self.question.answer})"
+            message = f"No one got it? :(\nThe answer was {self.current_question.answer})"
             self.sendString(message)
         if len(self.questions) > 0:
             self.current_question = self.questions.pop(0)
