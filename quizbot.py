@@ -19,7 +19,7 @@ CHECK_FUNCTIONS = {
     '=': lambda x, y: operator.eq(x.lower(), y.lower())
 }
 
-COMMON_INTRO_TEXT = "Hi there, this is Simon's little baby quizbot"
+COMMON_INTRO_TEXT = "<!here> Hi there, this is Simon's little baby quizbot"
 READY_SET_GO = "Ready? Let's go!"
 DEFAULT_HINT_TEXT = "Do you really need a hint??? Keep guessing :)"
 
@@ -47,6 +47,7 @@ class Quiz(object):
         time_limit = 180
         time_hint = 60
         check_function = None
+        original_score = 1
         score = 1
         def __init__(
             self, question_text, answer, check_function='=', 
@@ -56,7 +57,8 @@ class Quiz(object):
             self.hints = hints
             self.time_limit = time_limit
             self.time_hint = time_hint
-            self.score = score
+            self.original_score = score
+            self.score = self.original_score
             # return a function from stringmatch
             self.check_function = self.getCheckFunction(check_function)  
             
@@ -71,11 +73,22 @@ class Quiz(object):
                     self.check_function(x, answer) for x in self.answer
                 ])
 
+        def decrementScore(self):
+            ## take a linear gradient from start to end
+            decrementAmount = (self.time_hint / self.time_limit) * self.original_score
+            self.score -= decrementAmount
+
     def sendQuestion(self, text, hint=False):
         if hint is not True:
             text = self.current_question.text
 
-        message = f"{'Hint' if hint else 'Question'}: {text}"
+        points = self.current_question.score
+        points = round(points, 2)
+        # drop decimal if the number is the same
+        if points == round(points):
+            points = round(points)
+
+        message = f"<!here> *{'Hint' if hint else 'Question'} ({points} point{'s' if points != 1 else ''}):* {text}"
         self.sendString(message)
 
         if hint is not True:
@@ -123,6 +136,7 @@ class Quiz(object):
         if time_now > time_end:
             self.endQuestion(fail=True)
         else:
+            self.current_question.decrementScore()
             self.sendQuestion(self.getHintText(), hint=True)
 
     def getHintText(self):
@@ -139,6 +153,8 @@ class Quiz(object):
         if fail is True:
             message = f"No one got it? :(\nThe answer was {self.current_question.answer})"
             self.sendString(message)
+            ## sleep 3s to give people a chance
+            time.sleep(3)
         if len(self.questions) > 0:
             self.current_question = self.questions.pop(0)
             self.sendQuestion(self.current_question.text)
@@ -192,12 +208,22 @@ class Quiz(object):
         results = sorted(
             self.userScores.items(), key=operator.itemgetter(1), reverse=True
         )
-        winner = results[0]
-        message = f"AND THE WINNER IS: <@{winner[0]}> with a score of {winner[1]}!\n"
+        # this is a kinda shit way to do it but meh
+        topscore = results[0][1]
+        bottomscore = results[-1][1]
+        winners = [winner for winner in results if winner[1] == topscore]
+        if len(winners) == 1:
+            winner = results[0]
+            message = f"AND THE WINNER IS: <@{winner[0]}> :crown: with a score of {topscore:.2f}!\n"
+        elif len(winners) == 0:
+            message = f"WTF? Did no-one win? This can't happen...\n"
+        else: 
+            message = f"We have JOINT winners this week, tied on a score of {topscore:.2f}! They are: \n"
+            for winner in winners:
+                message += f"\t\t<@{winner[0]}> :crown:\n"
         message += "The results are as follows: \n"
         for i, result in enumerate(results):
-            message += f"{i+1}) <@{result[0]}> - score {result[1]}\n"
-
+            message += f"{i+1}) <@{result[0]}> {':poop:' if result[1] == bottomscore and not bottomscore == topscore else ''} - score {result[1]:.2f}\n"
         self.sendString(message)
 
     def sayThanks(self):
@@ -262,8 +288,9 @@ class Quiz(object):
                 self.endQuestion()
                 self.web = old_web
             else:
-                pass 
-                self.sendIncorrectMessage(user)
+                if not user in self.userScores.keys():
+                    self.userScores[user] = 0
+                # self.sendIncorrectMessage(user)
 
 
 def parseCLArgs():
